@@ -1,0 +1,14 @@
+{
+  "name": "musepic-gallery",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "dev": "next dev", "build": "next build", "start": "next start" },
+  "dependencies": {
+    "next": "latest", "react": "latest", "react-dom": "latest",
+    "@supabase/supabase-js": "latest", "lucide-react": "latest", "framer-motion": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest", "@types/node": "latest", "@types/react": "latest",
+    "@types/react-dom": "latest", "tailwindcss": "latest", "postcss": "latest", "autoprefixer": "latest"
+  }
+}
