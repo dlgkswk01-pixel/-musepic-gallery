@@ -48,7 +48,7 @@ export default function UploadPage() {
   }
 
   // Spotify 곡 검색
-  const searchSpotifyTracks = async () => {
+  const searchSpotifyTracks = async (): Promise<void> => {
     if (!searchQuery.trim()) return
     
     try {
@@ -74,7 +74,7 @@ export default function UploadPage() {
     }
   }
 
-  const refreshSpotifyToken = async () => {
+  const refreshSpotifyToken = async (): Promise<void> => {
     // 실제로는 백엔드에서 처리해야 합니다
     console.log('Token refresh needed')
   }
