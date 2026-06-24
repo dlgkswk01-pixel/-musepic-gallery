@@ -45,7 +45,7 @@ export default function ExhibitDetail() {
 
     const fetchExhibit = async () => {
       try {
-        const { data: exhibit, error: fetchError } = await supabase
+        const { data: exhibit, error: fetchError } = await supabase!
           .from('exhibits')
           .select('*')
           .eq('id', id)
