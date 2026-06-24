@@ -30,9 +30,6 @@ export default function UploadPage() {
       setUser(JSON.parse(storedUser))
     }
   }, [])
-      }
-    })
-  }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null
