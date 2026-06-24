@@ -11,7 +11,7 @@ const supabase = createClient(
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -19,11 +19,10 @@ export default function AuthPage() {
 
   // 이미 로그인되어 있으면 메인 페이지로
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.push('/')
-      }
-    })
+    const user = localStorage.getItem('user')
+    if (user) {
+      router.push('/')
+    }
   }, [])
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -32,52 +31,75 @@ export default function AuthPage() {
     setLoading(true)
 
     try {
+      const trimmedUsername = username.toLowerCase().trim()
+
       if (isLogin) {
-        // 로그인
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: email.toLowerCase().trim(),
-          password,
-        })
-        if (signInError) {
-          // Supabase 에러 메시지를 더 친화적으로
-          if (signInError.message.includes('Invalid login credentials')) {
-            throw new Error('이메일 또는 비밀번호가 잘못되었습니다.')
-          }
-          throw signInError
+        // 로그인: username으로 사용자 조회
+        const { data, error: queryError } = await supabase
+          .from('users')
+          .select('id, username')
+          .eq('username', trimmedUsername)
+          .single()
+
+        if (queryError || !data) {
+          throw new Error('사용자를 찾을 수 없습니다.')
         }
-        
-        // 로그인 성공 후 세션 확인
+
+        // 실제로는 비밀번호를 해시해서 비교해야 하지만, 
+        // 간단한 테스트를 위해 바로 저장 (⚠️ 프로덕션에서는 절대금지)
+        const { data: loginData, error: loginError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('username', trimmedUsername)
+          .eq('password', password)
+          .single()
+
+        if (loginError || !loginData) {
+          throw new Error('비밀번호가 잘못되었습니다.')
+        }
+
+        // 로그인 성공
+        localStorage.setItem('user', JSON.stringify({
+          id: loginData.id,
+          username: loginData.username
+        }))
+
+        setError('✅ 로그인 성공!')
         await new Promise(resolve => setTimeout(resolve, 500))
         router.push('/')
       } else {
-        // 회원가입
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email: email.toLowerCase().trim(),
-          password,
-        })
-        if (signUpError) throw signUpError
+        // 회원가입: username이 이미 존재하는지 확인
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('username', trimmedUsername)
+          .single()
 
-        // 회원가입 성공 시 이메일 검증 필요 표시
-        if (data?.user?.identities?.length === 0) {
-          setError('⚠️ 이미 가입된 이메일입니다.')
-          return
+        if (existingUser) {
+          throw new Error('이미 사용 중인 사용자명입니다.')
         }
 
-        // 자동 로그인 시도
-        const { error: autoLoginError } = await supabase.auth.signInWithPassword({
-          email: email.toLowerCase().trim(),
-          password,
-        })
+        // 새 사용자 생성
+        const { data: newUser, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            username: trimmedUsername,
+            password: password // ⚠️ 실제로는 bcrypt 등으로 해시해야 함
+          })
+          .select()
+          .single()
 
-        if (!autoLoginError) {
-          setError('✅ 회원가입 성공! 이동 중...')
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          router.push('/')
-        } else {
-          setError('✅ 회원가입 완료! 로그인해주세요.')
-          setIsLogin(true)
-          setPassword('')
-        }
+        if (insertError) throw insertError
+
+        // 회원가입 후 자동 로그인
+        localStorage.setItem('user', JSON.stringify({
+          id: newUser.id,
+          username: newUser.username
+        }))
+
+        setError('✅ 회원가입 성공!')
+        await new Promise(resolve => setTimeout(resolve, 500))
+        router.push('/')
       }
     } catch (err: any) {
       console.error('Auth error:', err)
@@ -96,18 +118,20 @@ export default function AuthPage() {
         <form onSubmit={handleAuth} className="space-y-4">
           <div className="space-y-4">
             <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="사용자명 (영문, 숫자)"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               disabled={loading}
+              minLength={3}
+              pattern="[a-z0-9_-]*"
               className="w-full border-b border-stone-200 py-3 outline-none focus:border-stone-900 transition text-sm disabled:opacity-50"
             />
 
             <input
               type="password"
-              placeholder="Password (6자 이상)"
+              placeholder="비밀번호 (6자 이상)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -118,14 +142,18 @@ export default function AuthPage() {
           </div>
 
           {error && (
-            <p className={`text-sm text-center p-3 rounded ${error.includes('✅') ? 'bg-green-50 text-green-700' : error.includes('⚠️') ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}>
+            <p className={`text-sm text-center p-3 rounded ${
+              error.includes('✅') 
+                ? 'bg-green-50 text-green-700' 
+                : 'bg-red-50 text-red-700'
+            }`}>
               {error}
             </p>
           )}
 
           <button
             type="submit"
-            disabled={loading || !email || !password}
+            disabled={loading || !username || !password}
             className="w-full bg-black text-white py-3 rounded-full font-bold text-sm tracking-widest hover:scale-[1.02] active:scale-95 transition disabled:bg-stone-300 disabled:cursor-not-allowed"
           >
             {loading ? 'Processing...' : isLogin ? 'LOGIN' : 'SIGN UP'}
@@ -148,6 +176,10 @@ export default function AuthPage() {
           </button>
           <div className="flex-1 h-px bg-stone-200" />
         </div>
+      </div>
+    </div>
+  )
+}
       </div>
     </div>
   )

@@ -23,11 +23,13 @@ export default function UploadPage() {
 
   // 로그인 확인
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        router.push('/auth')
-      } else {
-        setUser(session.user)
+    const storedUser = localStorage.getItem('user')
+    if (!storedUser) {
+      router.push('/auth')
+    } else {
+      setUser(JSON.parse(storedUser))
+    }
+  }, [])
       }
     })
   }, [])

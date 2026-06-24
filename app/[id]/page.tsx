@@ -22,9 +22,10 @@ export default function ExhibitDetail() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setCurrentUser(session?.user)
-    })
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser))
+    }
 
     const fetchData = async () => {
       const { data: exhibit } = await supabase

@@ -17,29 +17,33 @@ export default function ProfilePage() {
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) {
-        router.push('/auth')
-        return
-      }
+    const storedUser = localStorage.getItem('user')
+    if (!storedUser) {
+      router.push('/auth')
+      return
+    }
 
-      setUser(session.user)
+    const parsedUser = JSON.parse(storedUser)
+    setUser(parsedUser)
 
-      // 사용자의 작품만 조회
+    // 사용자의 작품만 조회
+    const fetchExhibits = async () => {
       const { data } = await supabase
         .from('exhibits')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', parsedUser.id)
         .order('created_at', { ascending: false })
 
       setExhibits(data || [])
       setLoading(false)
-    })
+    }
+
+    fetchExhibits()
   }, [])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+  const handleLogout = () => {
+    localStorage.removeItem('user')
+    router.push('/auth')
   }
 
   const handleDelete = async (exhibitId: string, imageUrl: string) => {
