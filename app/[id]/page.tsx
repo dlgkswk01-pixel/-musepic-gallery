@@ -122,6 +122,10 @@ export default function ExhibitDetail() {
     )
   }
 
+  if (!data) {
+    return <div className="h-screen bg-black text-white flex items-center justify-center">Exhibit data not loaded.</div>
+  }
+
   return (
     <div className="h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center overflow-hidden relative">
       <div
