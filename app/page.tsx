@@ -1,28 +1,38 @@
-// 1. 빌드 시 정적 페이지 생성을 건너뛰고 실시간 렌더링을 하도록 강제 설정 (에러 해결 핵심)
 export const dynamic = 'force-dynamic'
 
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
+import { supabase } from './supabase'
 
-// 2. Supabase 초기화 (환경 변수가 없을 경우 대비해 안전 장치 추가)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
-const supabase = createClient(supabaseUrl, supabaseKey)
+type Exhibit = {
+  id: string
+  title: string
+  artist_name: string
+  image_url: string
+}
 
 export default async function GalleryPage() {
-  // 3. 데이터 불러오기 (try-catch로 안전하게 처리)
-  let exhibits: any[] = []
+  let exhibits: Exhibit[] = []
+  let hasError = false
   
-  try {
-    const { data, error } = await supabase
-      .from('exhibits')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    if (data) exhibits = data
-    if (error) console.error('Supabase 데이터 호출 에러:', error)
-  } catch (e) {
-    console.error('데이터를 불러오지 못했습니다:', e)
+  if (!supabase) {
+    hasError = true
+  } else {
+    try {
+      const { data, error } = await supabase
+        .from('exhibits')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Supabase 데이터 호출 에러:', error)
+        hasError = true
+      } else if (data) {
+        exhibits = data as Exhibit[]
+      }
+    } catch (e) {
+      console.error('데이터를 불러오지 못했습니다:', e)
+      hasError = true
+    }
   }
 
   return (
@@ -50,8 +60,20 @@ export default async function GalleryPage() {
       </header>
 
       {/* 갤러리 그리드 리스트 */}
-      <section className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
-        {exhibits && exhibits.length > 0 ? (
+      <section className="max-w-7xl mx-auto">
+        {hasError && (
+          <div className="col-span-full py-32 text-center border-2 border-dashed border-red-200 rounded-[2rem] bg-red-50">
+            <p className="text-red-600 font-serif italic text-lg mb-4">
+              ⚠️ 데이터를 불러올 수 없습니다.
+            </p>
+            <p className="text-red-500 text-xs mb-4">
+              Supabase 설정을 확인해주세요.
+            </p>
+          </div>
+        )}
+        {!hasError && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
+            {exhibits.length > 0 ? (
           exhibits.map((item) => (
             <Link href={`/${item.id}`} key={item.id} className="group block">
               <div className="aspect-[3/4] overflow-hidden mb-6 bg-stone-200 relative">
@@ -73,15 +95,16 @@ export default async function GalleryPage() {
               </div>
             </Link>
           ))
-        ) : (
-          <div className="col-span-full py-32 text-center border-2 border-dashed border-stone-200 rounded-[2rem]">
-            <p className="text-stone-400 font-serif italic text-lg mb-4">
-              아직 전시된 작품이 없습니다.
-            </p>
-            <Link href="/upload" className="text-xs font-bold text-stone-900 underline underline-offset-4 hover:text-stone-500">
-              첫 번째 작품 업로드하기
-            </Link>
-          </div>
+            ) : (
+              <div className="col-span-full py-32 text-center border-2 border-dashed border-stone-200 rounded-[2rem]">
+                <p className="text-stone-400 font-serif italic text-lg mb-4">
+                  아직 전시된 작품이 없습니다.
+                </p>
+                <Link href="/upload" className="text-xs font-bold text-stone-900 underline underline-offset-4 hover:text-stone-500">
+                  첫 번째 작품 업로드하기
+                </Link>
+              </div>
+            )}
         )}
       </section>
 
