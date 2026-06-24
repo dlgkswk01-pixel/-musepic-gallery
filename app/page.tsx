@@ -1,42 +1,45 @@
-export const dynamic = 'force-dynamic'
-
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 
-// 환경 변수가 없을 때를 대비한 안전 장치
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-const supabase = createClient(supabaseUrl, supabaseKey)
+// 다른 파일을 불러오지 않고 여기서 바로 Supabase를 만듭니다. (경로 에러 방지)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
-export default async function Page() {
-  let exhibits: any[] = []
-  
-  try {
-    const { data } = await supabase.from('exhibits').select('*')
-    if (data) exhibits = data
-  } catch (e) {
-    console.error('데이터를 불러오지 못했습니다.')
-  }
+export default async function GalleryPage() {
+  // DB에서 데이터 가져오기
+  const { data: exhibits } = await supabase
+    .from('exhibits')
+    .select('*')
+    .order('created_at', { ascending: false })
 
   return (
-    <main className="p-10 bg-[#fcfaf7] min-h-screen">
-      <nav className="flex justify-between items-center mb-10">
-        <h1 className="text-2xl font-serif font-bold">MusePic Gallery</h1>
-        <Link href="/upload" className="bg-black text-white px-4 py-2 rounded-full text-sm">Upload</Link>
+    <main style={{ padding: '40px', fontFamily: 'serif', backgroundColor: '#fcfaf7', minHeight: '100vh' }}>
+      <nav style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '60px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>MusePic Gallery</h1>
+        <Link href="/upload" style={{ backgroundColor: 'black', color: 'white', padding: '10px 20px', borderRadius: '20px', textDecoration: 'none', fontSize: '14px' }}>
+          Upload
+        </Link>
       </nav>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {exhibits.map((item: any) => (
-          <div key={item.id} className="bg-white p-4 shadow-sm">
-            <img src={item.image_url} className="w-full aspect-[3/4] object-cover mb-4" alt="art" />
-            <h2 className="font-serif text-lg">{item.title}</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '40px' }}>
+        {exhibits && exhibits.map((item: any) => (
+          <div key={item.id} style={{ border: '1px solid #eee', padding: '15px', backgroundColor: 'white' }}>
+            <img 
+              src={item.image_url} 
+              alt={item.title} 
+              style={{ width: '100%', aspectRatio: '3/4', objectCover: 'cover', marginBottom: '15px' }} 
+            />
+            <h3 style={{ fontSize: '18px', margin: '0 0 5px 0' }}>{item.title}</h3>
+            <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>{item.artist_name}</p>
           </div>
         ))}
       </div>
-      
-      {exhibits.length === 0 && (
-        <div className="py-20 text-center text-gray-400 border-2 border-dashed rounded-3xl">
-          전시된 작품이 없습니다. (DB 연결 확인 필요)
+
+      {(!exhibits || exhibits.length === 0) && (
+        <div style={{ textAlign: 'center', padding: '100px 0', border: '2px dashed #ddd', borderRadius: '20px', color: '#aaa' }}>
+          전시된 작품이 없습니다. (DB를 확인해주세요)
         </div>
       )}
     </main>
