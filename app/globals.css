@@ -1,1 +1,18 @@
-@tailwind base; @tailwind components; @tailwind utilities;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* 스포트라이트가 더 부드럽게 보이도록 추가 */
+.spotlight-overlay {
+  transition: background 0.1s ease-out;
+}
