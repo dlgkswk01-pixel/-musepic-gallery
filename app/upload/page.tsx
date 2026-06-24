@@ -16,6 +16,7 @@ export default function UploadPage() {
   const [artist, setArtist] = useState('')
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [selectedSong, setSelectedSong] = useState<string>('')
   const router = useRouter()
 
   // 로그인 확인
@@ -137,6 +138,26 @@ export default function UploadPage() {
             onChange={(e) => setArtist(e.target.value)}
             className="w-full border-b border-stone-200 py-3 outline-none focus:border-stone-900 transition text-sm"
           />
+
+          {/* 🎵 음악 선택 */}
+          <div className="pt-4 border-t border-stone-200 space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-stone-500">🎵 배경음악 선택 (선택사항)</label>
+            <select 
+              value={selectedSong}
+              onChange={(e) => setSelectedSong(e.target.value)}
+              className="w-full border-b border-stone-200 py-3 outline-none focus:border-stone-900 transition text-sm"
+            >
+              <option value="">음악을 선택해주세요</option>
+              <option value="ambient1">Ambient Calm - 명상음악</option>
+              <option value="ambient2">Evening Breeze - 저녁 바람</option>
+              <option value="jazz1">Jazz Lounge - 재즈라운지</option>
+              <option value="classical1">Classical Peace - 클래식</option>
+              <option value="electronic1">Electronic Vibes - 전자음악</option>
+            </select>
+            {selectedSong && (
+              <p className="text-xs text-green-600 font-bold">✓ 선택됨</p>
+            )}
+          </div>
         </div>
 
         <button 
