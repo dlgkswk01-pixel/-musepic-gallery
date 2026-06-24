@@ -1,14 +1,17 @@
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
-
-// 다른 파일을 불러오지 않고 여기서 바로 Supabase를 만듭니다. (경로 에러 방지)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
+import { supabase } from './supabase'
 
 export default async function GalleryPage() {
-  // DB에서 데이터 가져오기
+  if (!supabase) {
+    return (
+      <main style={{ padding: '40px', fontFamily: 'serif', backgroundColor: '#fcfaf7', minHeight: '100vh' }}>
+        <div style={{ textAlign: 'center', padding: '100px 0', border: '2px dashed #ddd', borderRadius: '20px', color: '#999' }}>
+          Supabase 환경변수가 설정되어 있지 않습니다. `NEXT_PUBLIC_SUPABASE_URL`과 `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 `.env.local`에 추가하세요.
+        </div>
+      </main>
+    )
+  }
+
   const { data: exhibits } = await supabase
     .from('exhibits')
     .select('*')
@@ -29,7 +32,7 @@ export default async function GalleryPage() {
             <img 
               src={item.image_url} 
               alt={item.title} 
-              style={{ width: '100%', aspectRatio: '3/4', objectCover: 'cover', marginBottom: '15px' }} 
+              style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', marginBottom: '15px' }} 
             />
             <h3 style={{ fontSize: '18px', margin: '0 0 5px 0' }}>{item.title}</h3>
             <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>{item.artist_name}</p>
