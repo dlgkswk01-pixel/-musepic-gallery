@@ -16,9 +16,6 @@ export default function UploadPage() {
   const [artist, setArtist] = useState('')
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [spotifyTracks, setSpotifyTracks] = useState<any[]>([])
-  const [selectedTrack, setSelectedTrack] = useState<any>(null)
   const router = useRouter()
 
   // 로그인 확인
@@ -46,38 +43,6 @@ export default function UploadPage() {
     }
   }
 
-  // Spotify 곡 검색
-  const searchSpotifyTracks = async (): Promise<void> => {
-    if (!searchQuery.trim()) return
-    
-    try {
-      const response = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=5`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('spotify_token')}`
-          }
-        }
-      )
-      
-      if (response.status === 401) {
-        // 토큰 갱신 필요
-        await refreshSpotifyToken()
-        return searchSpotifyTracks()
-      }
-      
-      const data = await response.json()
-      setSpotifyTracks(data.tracks?.items || [])
-    } catch (error) {
-      console.error('Spotify 검색 실패:', error)
-    }
-  }
-
-  const refreshSpotifyToken = async (): Promise<void> => {
-    // 실제로는 백엔드에서 처리해야 합니다
-    console.log('Token refresh needed')
-  }
-
   const handleUpload = async () => {
     if (!file || !title) return alert('사진과 제목을 입력해주세요!')
     setLoading(true)
@@ -85,7 +50,7 @@ export default function UploadPage() {
     try {
       // 1. Supabase Storage에 이미지 업로드
       const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random()}.${fileExt}`
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
       const { error: uploadError } = await supabase.storage
         .from('gallery')
         .upload(fileName, file)
@@ -98,7 +63,7 @@ export default function UploadPage() {
         .getPublicUrl(fileName)
 
       // 2. DB에 작품 정보 저장
-      const { data: exhibitData, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from('exhibits')
         .insert({
           title,
@@ -107,24 +72,17 @@ export default function UploadPage() {
           user_id: user?.id,
           created_at: new Date()
         })
-        .select()
 
       if (dbError) throw dbError
 
-      // 3. Spotify 곡이 선택되면 저장
-      if (selectedTrack && exhibitData?.[0]) {
-        await supabase.from('spotify_tracks').insert({
-          exhibit_id: exhibitData[0].id,
-          spotify_id: selectedTrack.id,
-          track_name: selectedTrack.name,
-          artist_name: selectedTrack.artists[0]?.name,
-          preview_url: selectedTrack.preview_url
-        })
-      }
-
       alert('전시가 시작되었습니다!')
+      setFile(null)
+      setPreview(null)
+      setTitle('')
+      setArtist('')
       router.push('/')
     } catch (error: any) {
+      console.error('Upload error:', error)
       alert('에러 발생: ' + error.message)
     } finally {
       setLoading(false)
@@ -179,53 +137,6 @@ export default function UploadPage() {
             onChange={(e) => setArtist(e.target.value)}
             className="w-full border-b border-stone-200 py-3 outline-none focus:border-stone-900 transition text-sm"
           />
-
-          {/* Spotify 곡 검색 */}
-          <div className="space-y-2 pt-4 border-t border-stone-200">
-            <p className="text-xs font-bold uppercase tracking-widest text-stone-500">🎵 Spotify 곡 선택 (선택사항)</p>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="곡 또는 아티스트 검색..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && searchSpotifyTracks()}
-                className="flex-1 border-b border-stone-200 py-2 outline-none focus:border-stone-900 transition text-xs"
-              />
-              <button 
-                onClick={searchSpotifyTracks}
-                className="bg-black text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-stone-800 transition"
-              >
-                검색
-              </button>
-            </div>
-
-            {selectedTrack && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
-                <p className="font-bold text-green-900">✓ {selectedTrack.name}</p>
-                <p className="text-green-700 text-xs">{selectedTrack.artists[0]?.name}</p>
-              </div>
-            )}
-
-            {spotifyTracks.length > 0 && (
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {spotifyTracks.map((track) => (
-                  <button
-                    key={track.id}
-                    onClick={() => setSelectedTrack(track)}
-                    className={`w-full text-left p-2 rounded-lg text-xs transition ${
-                      selectedTrack?.id === track.id
-                        ? 'bg-black text-white'
-                        : 'bg-stone-100 hover:bg-stone-200'
-                    }`}
-                  >
-                    <p className="font-bold truncate">{track.name}</p>
-                    <p className="opacity-70 truncate">{track.artists[0]?.name}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
 
         <button 
