@@ -1,90 +1,42 @@
 export const dynamic = 'force-dynamic'
-
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
 export default async function GalleryPage() {
-  let exhibits: any[] = []
-  
-  try {
-    const { data, error } = await supabase
-      .from('exhibits')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    if (data) exhibits = data
-  } catch (e) {
-    console.error('데이터를 불러오지 못했습니다:', e)
-  }
+  const { data: exhibits } = await supabase.from('exhibits').select('*').order('created_at', { ascending: false })
 
   return (
-    <main className="min-h-screen bg-[#fcfaf7] px-6 py-10 md:px-20 font-sans text-stone-900">
-      
-      {/* 상단 네비게이션 */}
-      <nav className="flex justify-between items-center mb-24 max-w-7xl mx-auto">
-        <h1 className="text-2xl font-serif font-bold tracking-tighter">MusePic</h1>
-        <div className="flex gap-6 items-center">
-          <Link href="/upload" className="bg-black text-white px-6 py-2.5 rounded-full text-xs font-bold hover:scale-105 transition-transform">
-            UPLOAD WORK
-          </Link>
-        </div>
+    <main className="min-h-screen p-8 md:p-20 max-w-7xl mx-auto">
+      <nav className="flex justify-between items-center mb-32">
+        <h1 className="font-serif text-3xl font-bold tracking-tighter uppercase">MusePic</h1>
+        <Link href="/upload" className="bg-black text-white px-8 py-2.5 rounded-full text-xs font-bold hover:scale-105 transition">UPLOAD</Link>
       </nav>
 
-      {/* 헤더 섹션 */}
-      <header className="mb-20 max-w-7xl mx-auto">
-        <p className="text-[10px] uppercase tracking-[0.4em] text-stone-400 mb-3 font-black">
-          Online Virtual Exhibition
-        </p>
-        <h2 className="text-5xl md:text-7xl font-serif leading-[1.1] tracking-tight">
-          Nature's <br />
-          Silent Whispers
-        </h2>
+      <header className="mb-24">
+        <p className="text-[10px] uppercase tracking-[0.5em] text-stone-400 mb-4 font-bold">Virtual Exhibition</p>
+        <h2 className="font-serif text-6xl md:text-8xl leading-tight tracking-tight text-stone-800">Nature's <br/>Echo</h2>
       </header>
 
-      {/* 갤러리 그리드 리스트 */}
-      <section className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
-        {exhibits && exhibits.length > 0 ? (
-          exhibits.map((item) => (
-            <Link href={`/${item.id}`} key={item.id} className="group block">
-              <div className="aspect-[3/4] overflow-hidden mb-6 bg-stone-200 relative">
-                <img 
-                  src={item.image_url} 
-                  alt={item.title} 
-                  className="w-full h-full object-cover shadow-lg transition-transform duration-[1.5s] ease-out group-hover:scale-110" 
-                />
-                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              
-              <div className="space-y-1">
-                <h3 className="text-xl font-serif text-stone-800 tracking-tight group-hover:text-stone-500 transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-xs text-stone-400 uppercase tracking-widest font-medium">
-                  Photo by {item.artist_name || 'Unknown Artist'}
-                </p>
-              </div>
-            </Link>
-          ))
-        ) : (
-          <div className="col-span-full py-32 text-center border-2 border-dashed border-stone-200 rounded-[2rem]">
-            <p className="text-stone-400 font-serif italic text-lg mb-4">
-              아직 전시된 작품이 없습니다.
-            </p>
-            <Link href="/upload" className="text-xs font-bold text-stone-900 underline underline-offset-4 hover:text-stone-500">
-              첫 번째 작품 업로드하기
-            </Link>
-          </div>
-        )}
-      </section>
-
-      {/* 푸터 */}
-      <footer className="mt-40 pt-12 border-t border-stone-200 max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 pb-12 text-[10px] uppercase tracking-widest text-stone-400 font-bold">
-        <p>© 2024 MusePic Gallery</p>
-      </footer>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-16 gap-y-24">
+        {exhibits?.map((item) => (
+          <Link href={`/${item.id}`} key={item.id} className="group block">
+            <div className="aspect-[3/4] overflow-hidden bg-stone-200 relative mb-6 shadow-sm group-hover:shadow-2xl transition-all duration-700">
+              <img 
+                src={item.image_url} 
+                className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110" 
+                alt={item.title} 
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-serif text-2xl tracking-tight text-stone-800">{item.title}</h3>
+              <p className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">Photo by {item.artist_name}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
     </main>
   )
 }
