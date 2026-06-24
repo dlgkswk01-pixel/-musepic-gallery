@@ -42,24 +42,30 @@ export default function ExhibitDetail() {
     }
 
     setStatus('loading')
-    supabase
-      .from('exhibits')
-      .select('*')
-      .eq('id', id)
-      .single()
-      .then(({ data: exhibit, error: fetchError }) => {
+
+    const fetchExhibit = async () => {
+      try {
+        const { data: exhibit, error: fetchError } = await supabase
+          .from('exhibits')
+          .select('*')
+          .eq('id', id)
+          .single()
+
         if (fetchError || !exhibit) {
           setError(fetchError?.message || 'Exhibit not found.')
           setStatus('error')
           return
         }
+
         setData(exhibit as Exhibit)
         setStatus('success')
-      })
-      .catch((fetchError) => {
+      } catch (fetchError) {
         setError(String(fetchError))
         setStatus('error')
-      })
+      }
+    }
+
+    fetchExhibit()
   }, [id])
 
   useEffect(() => {
