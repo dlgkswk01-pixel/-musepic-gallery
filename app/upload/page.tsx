@@ -11,10 +11,26 @@ const supabase = createClient(
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] || null
+    setFile(selectedFile)
+    
+    if (selectedFile) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreview(reader.result as string)
+      }
+      reader.readAsDataURL(selectedFile)
+    } else {
+      setPreview(null)
+    }
+  }
 
   const handleUpload = async () => {
     if (!file || !title) return alert('사진과 제목을 입력해주세요!')
@@ -59,11 +75,31 @@ export default function UploadPage() {
       <div className="w-full max-w-md bg-white p-8 rounded-[2rem] shadow-sm space-y-6">
         <h1 className="text-2xl font-serif font-bold text-center">New Exhibit</h1>
         
+        {/* 이미지 미리보기 */}
+        {preview ? (
+          <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-stone-100 shadow-md">
+            <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+            <button
+              onClick={() => {
+                setFile(null)
+                setPreview(null)
+              }}
+              className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold hover:bg-red-600 transition"
+            >
+              Change
+            </button>
+          </div>
+        ) : (
+          <div className="aspect-[3/4] rounded-lg bg-stone-100 border-2 border-dashed border-stone-300 flex items-center justify-center">
+            <p className="text-center text-stone-400 text-sm">사진을 선택해주세요</p>
+          </div>
+        )}
+        
         <div className="space-y-4">
           <input 
             type="file" 
             accept="image/*" 
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            onChange={handleFileChange}
             className="w-full text-xs text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-stone-100 file:text-stone-700 hover:file:bg-stone-200"
           />
           
@@ -86,8 +122,8 @@ export default function UploadPage() {
 
         <button 
           onClick={handleUpload}
-          disabled={loading}
-          className="w-full bg-black text-white py-4 rounded-full font-bold text-sm tracking-widest hover:scale-[1.02] active:scale-95 transition disabled:bg-stone-300"
+          disabled={loading || !file || !title}
+          className="w-full bg-black text-white py-4 rounded-full font-bold text-sm tracking-widest hover:scale-[1.02] active:scale-95 transition disabled:bg-stone-300 disabled:scale-100 disabled:cursor-not-allowed"
         >
           {loading ? 'UPLOADING...' : 'PUBLISH TO GALLERY'}
         </button>
