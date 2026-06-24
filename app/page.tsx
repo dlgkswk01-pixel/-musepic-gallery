@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { supabase } from './supabase'
 import Link from 'next/link'
 
 export default async function Page() {
