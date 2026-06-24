@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* 추가 디자인 (배경 및 부드러운 전환) */
 html, body {
