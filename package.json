@@ -8,19 +8,21 @@
     "start": "next start"
   },
   "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "latest",
     "framer-motion": "latest",
     "lucide-react": "latest",
     "next": "latest",
+    "next-auth": "^4.24.14",
     "react": "latest",
     "react-dom": "latest"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "latest",
     "@types/node": "26.0.0",
     "@types/react": "19.2.17",
-    "typescript": "5.3.3",
-    "@tailwindcss/postcss": "latest",
+    "autoprefixer": "latest",
     "postcss": "latest",
-    "autoprefixer": "latest"
+    "typescript": "5.3.3"
   }
 }

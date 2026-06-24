@@ -11,7 +11,10 @@ export default async function GalleryPage() {
     <main className="min-h-screen p-8 md:p-20 max-w-7xl mx-auto">
       <nav className="flex justify-between items-center mb-32">
         <h1 className="font-serif text-3xl font-bold tracking-tighter uppercase">MusePic</h1>
-        <Link href="/upload" className="bg-black text-white px-8 py-2.5 rounded-full text-xs font-bold hover:scale-105 transition">UPLOAD</Link>
+        <div className="flex gap-4 items-center">
+          <Link href="/upload" className="bg-black text-white px-8 py-2.5 rounded-full text-xs font-bold hover:scale-105 transition">UPLOAD</Link>
+          <Link href="/profile" className="text-stone-700 px-6 py-2.5 rounded-full text-xs font-bold border border-stone-300 hover:bg-stone-100 transition">MY PAGE</Link>
+        </div>
       </nav>
 
       <header className="mb-24">

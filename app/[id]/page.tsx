@@ -11,6 +11,8 @@ export default function ExhibitDetail() {
   const { id } = useParams()
   const router = useRouter()
   const [data, setData] = useState<any>(null)
+  const [spotifyTrack, setSpotifyTrack] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const [pos, setPos] = useState({ x: 50, y: 50 })
   const [isImageHovered, setIsImageHovered] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -20,11 +22,38 @@ export default function ExhibitDetail() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    supabase.from('exhibits').select('*').eq('id', id).single().then(({data}) => setData(data))
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUser(session?.user)
+    })
+
+    const fetchData = async () => {
+      const { data: exhibit } = await supabase
+        .from('exhibits')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      setData(exhibit)
+
+      // Spotify 곡 정보 조회
+      if (exhibit) {
+        const { data: track } = await supabase
+          .from('spotify_tracks')
+          .select('*')
+          .eq('exhibit_id', exhibit.id)
+          .single()
+
+        if (track) {
+          setSpotifyTrack(track)
+        }
+      }
+    }
+
+    fetchData()
+
     const move = (e: MouseEvent) => setPos({ x: (e.clientX/window.innerWidth)*100, y: (e.clientY/window.innerHeight)*100 })
     window.addEventListener('mousemove', move)
     
-    // ESC 키로 풀스크린 모드 닫기
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullscreen) {
         setIsFullscreen(false)
@@ -39,6 +68,11 @@ export default function ExhibitDetail() {
   }, [id, isFullscreen])
 
   const handleDelete = async () => {
+    if (currentUser?.id !== data?.user_id) {
+      alert('자신의 작품만 삭제할 수 있습니다!')
+      return
+    }
+
     setIsDeleting(true)
     try {
       // 1. Storage에서 이미지 삭제
@@ -73,14 +107,16 @@ export default function ExhibitDetail() {
 
       <button onClick={() => router.back()} className="fixed top-10 left-10 z-50 text-white/40 hover:text-white transition text-[10px] tracking-widest font-bold">← BACK</button>
 
-      <button 
-        onClick={() => setShowDeleteConfirm(true)} 
-        className="fixed top-10 right-10 z-50 text-white/40 hover:text-red-400 transition flex items-center gap-2"
-        title="Delete exhibit"
-      >
-        <Trash2 size={16} />
-        <span className="text-[10px] tracking-widest font-bold">DELETE</span>
-      </button>
+      {currentUser?.id === data?.user_id && (
+        <button 
+          onClick={() => setShowDeleteConfirm(true)} 
+          className="fixed top-10 right-10 z-50 text-white/40 hover:text-red-400 transition flex items-center gap-2"
+          title="Delete exhibit"
+        >
+          <Trash2 size={16} />
+          <span className="text-[10px] tracking-widest font-bold">DELETE</span>
+        </button>
+      )}
 
       {/* 아트워크 */}
       <div className="z-10 text-center space-y-12 animate-in fade-in duration-1000">
@@ -102,13 +138,23 @@ export default function ExhibitDetail() {
       <div className="fixed bottom-12 z-50 w-full max-w-sm px-6">
         <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-4 rounded-[2.5rem] flex items-center gap-5 shadow-2xl">
           <div className="w-14 h-14 bg-stone-800 rounded-2xl overflow-hidden flex-shrink-0">
-             <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100" className="w-full h-full object-cover" />
+            {spotifyTrack?.preview_url ? (
+              <div className="w-full h-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-2xl">
+                🎵
+              </div>
+            ) : (
+              <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100" className="w-full h-full object-cover" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-bold truncate tracking-tight">{data.title} Mix</h4>
-            <p className="text-[10px] text-white/40 truncate uppercase font-bold tracking-widest">Ambient Selection</p>
+            <h4 className="text-xs font-bold truncate tracking-tight">
+              {spotifyTrack?.track_name || `${data?.title} Mix`}
+            </h4>
+            <p className="text-[10px] text-white/40 truncate uppercase font-bold tracking-widest">
+              {spotifyTrack?.artist_name || 'Ambient Selection'}
+            </p>
             <div className="h-0.5 bg-white/10 rounded-full mt-3 overflow-hidden">
-                <div className={`h-full bg-white/60 transition-all duration-[30s] ${isPlaying ? 'w-full' : 'w-0'}`} />
+              <div className={`h-full bg-white/60 transition-all duration-[30s] ${isPlaying ? 'w-full' : 'w-0'}`} />
             </div>
           </div>
           <button 
@@ -116,13 +162,20 @@ export default function ExhibitDetail() {
               if(isPlaying) audioRef.current?.pause(); else audioRef.current?.play();
               setIsPlaying(!isPlaying);
             }} 
-            className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:scale-110 transition shrink-0 shadow-lg"
+            disabled={spotifyTrack?.preview_url ? false : true}
+            className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:scale-110 transition shrink-0 shadow-lg disabled:opacity-50"
           >
             <span className="text-xl ml-1">{isPlaying ? 'Ⅱ' : '▶'}</span>
           </button>
         </div>
-        <audio ref={audioRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop />
-        <p className="text-center text-[9px] text-white/20 mt-5 tracking-[0.3em] font-bold uppercase">Synced with Curator Music</p>
+        <audio 
+          ref={audioRef} 
+          src={spotifyTrack?.preview_url || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'} 
+          loop 
+        />
+        <p className="text-center text-[9px] text-white/20 mt-5 tracking-[0.3em] font-bold uppercase">
+          {spotifyTrack ? '🎵 Synced with Spotify' : 'Ambient Background'}
+        </p>
       </div>
 
       {/* 📸 사진 전시 모드 - 풀스크린 */}
