@@ -1,38 +1,24 @@
 export const dynamic = 'force-dynamic'
 
+import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
-import { supabase } from './supabase'
 
-type Exhibit = {
-  id: string
-  title: string
-  artist_name: string
-  image_url: string
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export default async function GalleryPage() {
-  let exhibits: Exhibit[] = []
-  let hasError = false
+  let exhibits: any[] = []
   
-  if (!supabase) {
-    hasError = true
-  } else {
-    try {
-      const { data, error } = await supabase
-        .from('exhibits')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (error) {
-        console.error('Supabase 데이터 호출 에러:', error)
-        hasError = true
-      } else if (data) {
-        exhibits = data as Exhibit[]
-      }
-    } catch (e) {
-      console.error('데이터를 불러오지 못했습니다:', e)
-      hasError = true
-    }
+  try {
+    const { data, error } = await supabase
+      .from('exhibits')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (data) exhibits = data
+  } catch (e) {
+    console.error('데이터를 불러오지 못했습니다:', e)
   }
 
   return (
@@ -60,20 +46,8 @@ export default async function GalleryPage() {
       </header>
 
       {/* 갤러리 그리드 리스트 */}
-      <section className="max-w-7xl mx-auto">
-        {hasError && (
-          <div className="col-span-full py-32 text-center border-2 border-dashed border-red-200 rounded-[2rem] bg-red-50">
-            <p className="text-red-600 font-serif italic text-lg mb-4">
-              ⚠️ 데이터를 불러올 수 없습니다.
-            </p>
-            <p className="text-red-500 text-xs mb-4">
-              Supabase 설정을 확인해주세요.
-            </p>
-          </div>
-        )}
-        {!hasError && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
-            {exhibits.length > 0 ? (
+      <section className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
+        {exhibits && exhibits.length > 0 ? (
           exhibits.map((item) => (
             <Link href={`/${item.id}`} key={item.id} className="group block">
               <div className="aspect-[3/4] overflow-hidden mb-6 bg-stone-200 relative">
@@ -95,28 +69,21 @@ export default async function GalleryPage() {
               </div>
             </Link>
           ))
-            ) : (
-              <div className="col-span-full py-32 text-center border-2 border-dashed border-stone-200 rounded-[2rem]">
-                <p className="text-stone-400 font-serif italic text-lg mb-4">
-                  아직 전시된 작품이 없습니다.
-                </p>
-                <Link href="/upload" className="text-xs font-bold text-stone-900 underline underline-offset-4 hover:text-stone-500">
-                  첫 번째 작품 업로드하기
-                </Link>
-              </div>
-            )}
+        ) : (
+          <div className="col-span-full py-32 text-center border-2 border-dashed border-stone-200 rounded-[2rem]">
+            <p className="text-stone-400 font-serif italic text-lg mb-4">
+              아직 전시된 작품이 없습니다.
+            </p>
+            <Link href="/upload" className="text-xs font-bold text-stone-900 underline underline-offset-4 hover:text-stone-500">
+              첫 번째 작품 업로드하기
+            </Link>
+          </div>
         )}
       </section>
 
       {/* 푸터 */}
-      <footer className="mt-40 pt-12 border-t border-stone-200 max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 pb-12">
-        <p className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">
-          © 2024 MusePic Gallery — Virtual Photo Space
-        </p>
-        <div className="flex gap-8 text-[10px] uppercase tracking-widest text-stone-400 font-bold">
-          <span>About</span>
-          <span>Contact</span>
-        </div>
+      <footer className="mt-40 pt-12 border-t border-stone-200 max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 pb-12 text-[10px] uppercase tracking-widest text-stone-400 font-bold">
+        <p>© 2024 MusePic Gallery</p>
       </footer>
     </main>
   )
